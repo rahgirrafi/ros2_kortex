@@ -25,3 +25,5 @@ moveit_simple_controller_manager:
       - robotiq_85_left_knuckle_joint
     action_ns: gripper_cmd
     default: true
+    max_position: 0.8
+    max_effort: 100.0

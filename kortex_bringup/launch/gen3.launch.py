@@ -107,6 +107,13 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument("launch_rviz", default_value="true", description="Launch RViz?")
     )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "use_sim_time",
+            default_value="false",
+            description="Use simulation time",
+        )
+    )
 
     # Initialize Arguments
     robot_type = LaunchConfiguration("robot_type")
@@ -122,6 +129,7 @@ def generate_launch_description():
     gripper_joint_name = LaunchConfiguration("gripper_joint_name")
     launch_rviz = LaunchConfiguration("launch_rviz")
     controllers_file = LaunchConfiguration("controllers_file")
+    use_sim_time = LaunchConfiguration("use_sim_time")
 
     base_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([ThisLaunchFileDir(), "/kortex_control.launch.py"]),
@@ -139,6 +147,7 @@ def generate_launch_description():
             "gripper_joint_name": gripper_joint_name,
             "launch_rviz": launch_rviz,
             "controllers_file": controllers_file,
+            "use_sim_time": use_sim_time,
             "description_file": "gen3.xacro",
         }.items(),
     )

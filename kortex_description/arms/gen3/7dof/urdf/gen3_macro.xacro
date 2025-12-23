@@ -24,7 +24,7 @@
     gripper_max_velocity:=100.0
     gripper_max_force:=100.0
     use_fake_hardware:=false
-    fake_sensor_commands:=false
+    mock_sensor_commands:=false
     sim_gazebo:=false
     sim_ignition:=false
     sim_isaac:=false
@@ -35,12 +35,16 @@
     moveit_active:=false">
 
     <!-- ros2 control include -->
-    <xacro:include filename="$(find kortex_description)/arms/gen3/${dof}dof/urdf/kortex.ros2_control.xacro" />
+    <xacro:include filename="$(find kortex_description)/arms/gen3/${dof}dof/urdf/kortex.ros2_control.xacro" /> 
+    <xacro:include filename="$(find realsense2_description)/urdf/_d435.urdf.xacro" />
+
+    <xacro:property name="PI" value="3.1415926535897931"/>
+
     <xacro:kortex_ros2_control
       name="${prefix}KortexMultiInterfaceHardware"
       prefix="${prefix}"
       use_fake_hardware="${use_fake_hardware}"
-      fake_sensor_commands="${fake_sensor_commands}"
+      mock_sensor_commands="${mock_sensor_commands}"
       sim_gazebo="${sim_gazebo}"
       sim_ignition="${sim_ignition}"
       sim_isaac="${sim_isaac}"
@@ -405,6 +409,38 @@
       </collision>
     </link>
     </xacro:unless>
+    <xacro:sensor_d435 parent="${prefix}bracelet_link" name="${prefix}d435" use_nominal_extrinsics="true">
+      <origin xyz="0 0.05 0" rpy="0 ${PI/2} ${PI/2}"/>
+    </xacro:sensor_d435>
+    <link name="${prefix}d435_link_optical"></link>
+    <joint name="${prefix}d435_optical_joint" type="fixed">
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <parent link="${prefix}d435_link" />
+      <child  link="${prefix}d435_link_optical" />
+    </joint>
+
+    <gazebo reference="${prefix}d435_link">
+      <sensor name="${prefix}d435_camera" type="rgbd_camera">
+        <camera>
+          <horizontal_fov>1.25</horizontal_fov>
+          <image>
+            <width>640</width>
+            <height>480</height>
+          </image>
+          <clip>
+            <near>0.3</near>
+            <far>100</far>
+          </clip>
+          <gz_frame_id>${prefix}d435</gz_frame_id>
+          <optical_frame_id>${prefix}d435_link_optical</optical_frame_id>
+        </camera>
+        <always_on>1</always_on>
+        <update_rate>30</update_rate>
+        <visualize>true</visualize>
+        <gz_frame_id>${prefix}d435</gz_frame_id>
+        <topic>${prefix}/sensors/${prefix}d435_camera</topic>
+      </sensor>
+    </gazebo>
     <xacro:if value="${use_external_cable}">
       <joint
         name="${prefix}joint_7"

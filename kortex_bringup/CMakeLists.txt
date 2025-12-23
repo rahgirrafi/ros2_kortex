@@ -10,7 +10,7 @@ install(PROGRAMS
   DESTINATION lib/${PROJECT_NAME}
 )
 
-install(DIRECTORY config launch
+install(DIRECTORY config launch world
   DESTINATION share/${PROJECT_NAME}
 )
 

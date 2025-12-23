@@ -55,6 +55,7 @@ def launch_setup(context, *args, **kwargs):
     launch_rviz = LaunchConfiguration("launch_rviz")
     use_sim_time = LaunchConfiguration("use_sim_time")
     gripper = LaunchConfiguration("gripper")
+    use_realsense = LaunchConfiguration("use_realsense")
 
     robot_controllers = PathJoinSubstitution(
         # https://answers.ros.org/question/397123/how-to-access-the-runtime-value-of-a-launchconfiguration-instance-within-custom-launch-code-injected-via-an-opaquefunction-in-ros2/
@@ -106,16 +107,18 @@ def launch_setup(context, *args, **kwargs):
             "gripper:=",
             gripper,
             " ",
+            "use_realsense:=",
+            use_realsense,
+            " ",
         ]
     )
-    robot_description = {"robot_description": robot_description_content.perform(context)}
 
     robot_state_publisher_node = Node(
         package="robot_state_publisher",
         executable="robot_state_publisher",
         output="both",
         parameters=[
-            robot_description,
+            {"robot_description": robot_description_content},
             {"use_sim_time": use_sim_time},
         ],
     )
@@ -222,24 +225,15 @@ def launch_setup(context, *args, **kwargs):
         executable="create",
         output="screen",
         arguments=[
-            "-string",
-            robot_description_content,
-            "-name",
-            robot_name,
-            "-allow_renaming",
-            "true",
-            "-x",
-            "0.0",
-            "-y",
-            "0.0",
-            "-z",
-            "0.3",
-            "-R",
-            "0.0",
-            "-P",
-            "0.0",
-            "-Y",
-            "0.0",
+            "-topic", "robot_description",
+            "-name", robot_name,
+            "-allow_renaming", "true",
+            "-x", "0.0",
+            "-y", "0.0",
+            "-z", "0.3",
+            "-R", "0.0",
+            "-P", "0.0",
+            "-Y", "0.0",
         ],
         condition=IfCondition(sim_ignition),
     )
@@ -248,7 +242,7 @@ def launch_setup(context, *args, **kwargs):
         PythonLaunchDescriptionSource(
             [FindPackageShare("ros_gz_sim"), "/launch/gz_sim.launch.py"]
         ),
-        launch_arguments={"ign_args": " -r -v 3 empty.sdf"}.items(),
+        launch_arguments={"ign_args": [" -r -v 3 ", PathJoinSubstitution([FindPackageShare("kortex_bringup"), "world", "warehouse.sdf"])]}.items(),
         condition=IfCondition(sim_ignition),
     )
 
@@ -258,10 +252,10 @@ def launch_setup(context, *args, **kwargs):
         executable="parameter_bridge",
         parameters=[{"use_sim_time": use_sim_time}],
         arguments=[
-            "/wrist_mounted_camera/image@sensor_msgs/msg/Image[ignition.msgs.Image",
-            "/wrist_mounted_camera/depth_image@sensor_msgs/msg/Image[ignition.msgs.Image",
-            "/wrist_mounted_camera/points@sensor_msgs/msg/PointCloud2[ignition.msgs.PointCloudPacked",
-            "/wrist_mounted_camera/camera_info@sensor_msgs/msg/CameraInfo[ignition.msgs.CameraInfo",
+            "/sensors/d435_camera/image@sensor_msgs/msg/Image[ignition.msgs.Image",
+            "/sensors/d435_camera/depth_image@sensor_msgs/msg/Image[ignition.msgs.Image",
+            "/sensors/d435_camera/points@sensor_msgs/msg/PointCloud2[ignition.msgs.PointCloudPacked",
+            "/sensors/d435_camera/camera_info@sensor_msgs/msg/CameraInfo[ignition.msgs.CameraInfo",
         ],
         output="screen",
     )
@@ -412,6 +406,13 @@ def generate_launch_description():
     )
     declared_arguments.append(
         DeclareLaunchArgument("launch_rviz", default_value="true", description="Launch RViz?")
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "use_realsense",
+            default_value="false",
+            description="Mount RealSense D435 camera on bracelet_link",
+        )
     )
 
     return LaunchDescription(declared_arguments + [OpaqueFunction(function=launch_setup)])
