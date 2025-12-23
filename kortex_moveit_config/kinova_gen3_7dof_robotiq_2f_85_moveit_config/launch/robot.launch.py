@@ -57,7 +57,15 @@ def launch_setup(context, *args, **kwargs):
             publish_robot_description=True, publish_robot_description_semantic=True
         )
         .planning_pipelines(pipelines=["ompl", "pilz_industrial_motion_planner"])
+        .sensors_3d(
+            file_path=os.path.join(
+                get_package_share_directory("kinova_gen3_7dof_robotiq_2f_85_moveit_config"),
+                "config",
+                "sensors_3d.yaml",
+            )
+        )
         .to_moveit_configs()
+        
     )
 
     moveit_config.moveit_cpp.update({"use_sim_time": use_sim_time.perform(context) == "true"})
@@ -135,7 +143,7 @@ def launch_setup(context, *args, **kwargs):
     # rviz with moveit configuration
     rviz_config_file = (
         get_package_share_directory("kinova_gen3_7dof_robotiq_2f_85_moveit_config")
-        + "/config/moveit.rviz"
+        + "/config/moveit_depth.rviz"
     )
     rviz_node = Node(
         package="rviz2",
