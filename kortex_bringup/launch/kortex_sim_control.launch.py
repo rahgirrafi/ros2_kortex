@@ -33,7 +33,64 @@ from launch.substitutions import (
 )
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
+import subprocess, os
+from ament_index_python.packages import get_package_share_directory
 
+import random
+import math
+
+def constrain(value, min_value, max_value):
+    return max(min_value, min(value, max_value))
+
+def generate_button_pose(max_dis):
+    """
+    Generate random button pose within max_dis from origin, facing toward origin.
+    
+    Args:
+        max_dis: Maximum distance from origin (0,0,0)
+    
+    Returns:
+        tuple: (x, y, z, roll, pitch, yaw) where the button faces toward origin
+    """
+    # Generate random position within a sphere of radius max_dis
+    # Using spherical coordinates for uniform distribution
+    
+    # Random radius (0 to max_dis)
+    # Using r^(1/3) for uniform distribution in 3D sphere
+    r = max_dis * (random.random() ** (1/3))
+    r = constrain(r, 0.5, max_dis)
+    
+    # Random angles for spherical coordinates
+    theta = random.uniform(0, math.pi)  # Azimuthal angle (0 to 2π)
+    phi = random.uniform(0, math.pi)         # Polar angle (0 to π)
+    
+    # Convert spherical to Cartesian coordinates
+    x = r * math.sin(phi) * math.cos(theta)
+    y = r * math.sin(phi) * math.sin(theta)
+    z = r * math.cos(phi) + 0.5
+    
+    if x < 0:
+        x = constrain(x, -max_dis, -0.5)
+        y = constrain(y, -max_dis, -0.5)
+        
+        
+    else:
+        x = constrain(x, 0.5, max_dis)
+        y = constrain(y, 0.5, max_dis)
+
+    z = constrain(z, 0.5, 1)
+    
+    # Calculate yaw to face toward origin
+    yaw = 1.57
+    pitch = 0
+    roll = 0 # No roll
+    
+   
+        
+    
+    return (x, y, z, roll, pitch, yaw)
+
+btn_x, btn_y, btn_z, btn_roll, btn_pitch, btn_yaw = generate_button_pose(1.0)
 
 def launch_setup(context, *args, **kwargs):
     # Initialize Arguments
@@ -56,7 +113,37 @@ def launch_setup(context, *args, **kwargs):
     use_sim_time = LaunchConfiguration("use_sim_time")
     gripper = LaunchConfiguration("gripper")
     use_realsense = LaunchConfiguration("use_realsense")
-
+    # btn_x = LaunchConfiguration("btn_x")
+    # btn_y = LaunchConfiguration("btn_y")
+    # btn_z = LaunchConfiguration("btn_z")
+    
+    pkg_share = get_package_share_directory('kortex_bringup')
+    
+        # Get values
+    # btn_x_val = btn_x.perform(context)
+    # btn_y_val = btn_y.perform(context)
+    # btn_z_val = btn_z.perform(context)
+    
+    # Get paths
+    pkg_share = get_package_share_directory('kortex_bringup')
+    xacro_file = os.path.join(pkg_share, 'world', 'warehouse.sdf.xacro')
+    output_file = os.path.join(pkg_share, 'world', 'warehouse.sdf')
+    
+    # Process xacro and write to file
+    xacro_cmd = [
+        'xacro',
+        xacro_file,
+        f'btn_x:={btn_x}',
+        f'btn_y:={btn_y}',
+        f'btn_z:={btn_z}',
+        f'btn_roll:={btn_roll}',
+        f'btn_pitch:={btn_pitch}',
+        f'btn_yaw:={btn_yaw}',
+    ]
+    
+    with open(output_file, 'w') as f:
+        subprocess.run(xacro_cmd, stdout=f, check=True)
+    
     robot_controllers = PathJoinSubstitution(
         # https://answers.ros.org/question/397123/how-to-access-the-runtime-value-of-a-launchconfiguration-instance-within-custom-launch-code-injected-via-an-opaquefunction-in-ros2/
         [
@@ -111,6 +198,7 @@ def launch_setup(context, *args, **kwargs):
             use_realsense,
             " ",
         ]
+        
     )
 
     robot_state_publisher_node = Node(
@@ -230,13 +318,14 @@ def launch_setup(context, *args, **kwargs):
             "-allow_renaming", "true",
             "-x", "0.0",
             "-y", "0.0",
-            "-z", "0.3",
+            "-z", "0.0",
             "-R", "0.0",
             "-P", "0.0",
             "-Y", "0.0",
         ],
         condition=IfCondition(sim_ignition),
     )
+    
 
     ignition_launch_description = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -244,6 +333,8 @@ def launch_setup(context, *args, **kwargs):
         ),
         launch_arguments={"ign_args": [" -r -v 3 ", PathJoinSubstitution([FindPackageShare("kortex_bringup"), "world", "warehouse.sdf"])]}.items(),
         condition=IfCondition(sim_ignition),
+        #ADD btn parameters as
+        
     )
 
     # Bridge
@@ -261,6 +352,7 @@ def launch_setup(context, *args, **kwargs):
     )
 
     nodes_to_start = [
+
         bridge,
         robot_state_publisher_node,
         joint_state_broadcaster_spawner,
@@ -414,5 +506,27 @@ def generate_launch_description():
             description="Mount RealSense D435 camera on bracelet_link",
         )
     )
-
-    return LaunchDescription(declared_arguments + [OpaqueFunction(function=launch_setup)])
+    # declared_arguments.append(
+    #     DeclareLaunchArgument(
+    #         "btn_x",
+    #         default_value="0.5",
+    #         description="X position of the button",
+    #     )
+    # )
+    # declared_arguments.append(
+    #     DeclareLaunchArgument(
+    #         "btn_y",
+    #         default_value="0.0",
+    #         description="Y position of the button",
+    #     )
+    # )
+    # declared_arguments.append(
+    #     DeclareLaunchArgument(
+    #         "btn_z",
+    #         default_value="0.0",
+    #         description="Z position of the button",
+    #     )
+    # )
+   
+    
+    return LaunchDescription( declared_arguments + [OpaqueFunction(function=launch_setup)])
