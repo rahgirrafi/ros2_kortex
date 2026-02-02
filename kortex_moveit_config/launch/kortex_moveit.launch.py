@@ -260,6 +260,11 @@ def generate_launch_description():
         },
     }
 
+    # MTC ExecuteTaskSolution capability
+    move_group_capabilities = {
+        "capabilities": "move_group/ExecuteTaskSolutionCapability"
+    }
+
     # Start the actual move_group node/action server
     move_group_node = Node(
         package="moveit_ros_move_group",
@@ -273,6 +278,7 @@ def generate_launch_description():
             trajectory_execution,
             moveit_controllers,
             planning_scene_monitor_parameters,
+            move_group_capabilities,
         ],
     )
 

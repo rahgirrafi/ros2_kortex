@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from launch import LaunchDescription
 from launch.substitutions import LaunchConfiguration
 from launch.actions import DeclareLaunchArgument
+from launch_ros.actions import Node
 from moveit_configs_utils import MoveItConfigsBuilder
-from moveit_configs_utils.launches import generate_move_group_launch
 
 
 def generate_launch_description():
@@ -59,6 +60,26 @@ def generate_launch_description():
         .to_moveit_configs()
     )
 
-    moveit_config.moveit_cpp.update({"use_sim_time": LaunchConfiguration("use_sim_time")})
+    # Add MTC ExecuteTaskSolution capability to move_group
+    move_group_capabilities = {
+        "capabilities": "move_group/ExecuteTaskSolutionCapability"
+    }
 
-    return generate_move_group_launch(moveit_config)
+    move_group_node = Node(
+        package="moveit_ros_move_group",
+        executable="move_group",
+        output="screen",
+        parameters=[
+            moveit_config.to_dict(),
+            {"use_sim_time": LaunchConfiguration("use_sim_time")},
+            {"publish_robot_description_semantic": True},
+            {"allow_trajectory_execution": True},
+            {"publish_planning_scene": True},
+            {"publish_geometry_updates": True},
+            {"publish_state_updates": True},
+            {"publish_transforms_updates": True},
+            move_group_capabilities,
+        ],
+    )
+
+    return LaunchDescription(declared_arguments + [move_group_node])
