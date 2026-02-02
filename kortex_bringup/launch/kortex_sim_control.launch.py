@@ -343,10 +343,10 @@ def launch_setup(context, *args, **kwargs):
         executable="parameter_bridge",
         parameters=[{"use_sim_time": use_sim_time}],
         arguments=[
-            "/sensors/d435_camera/image@sensor_msgs/msg/Image[ignition.msgs.Image",
-            "/sensors/d435_camera/depth_image@sensor_msgs/msg/Image[ignition.msgs.Image",
-            "/sensors/d435_camera/points@sensor_msgs/msg/PointCloud2[ignition.msgs.PointCloudPacked",
-            "/sensors/d435_camera/camera_info@sensor_msgs/msg/CameraInfo[ignition.msgs.CameraInfo",
+            "/sensors/camera/image@sensor_msgs/msg/Image[ignition.msgs.Image",
+            "/sensors/camera/depth_image@sensor_msgs/msg/Image[ignition.msgs.Image",
+            "/sensors/camera/points@sensor_msgs/msg/PointCloud2[ignition.msgs.PointCloudPacked",
+            "/sensors/camera/camera_info@sensor_msgs/msg/CameraInfo[ignition.msgs.CameraInfo",
         ],
         output="screen",
     )
